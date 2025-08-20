@@ -8,6 +8,9 @@ pytesseract>=0.3.8
 
 # NLP dependencies
 spacy>=3.4.0
+spacy-transformers>=1.1.2
+transformers>=4.15.0
+torch>=1.10.0
 
 # Data processing
 openpyxl>=3.0.0
@@ -15,7 +18,8 @@ openpyxl>=3.0.0
 # Utilities
 cryptography>=3.0.0
 
-# Add to requirements.txt
-spacy>=3.4.0
-# Then run: python -m spacy download en_core_web_lg
-# Then run: python -m spacy download de_core_news_lg
+# Spacy models to download
+# python -m spacy download en_core_web_lg
+# python -m spacy download en_core_web_sm
+# python -m spacy download de_core_news_lg
+# python -m spacy download de_core_news_sm

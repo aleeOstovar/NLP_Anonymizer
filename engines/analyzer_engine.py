@@ -78,7 +78,7 @@ class PIIAnalyzerEngine(BaseAnonymizerEngine):
         for recognizer in english_recognizers.get_recognizers():
             registry.add_recognizer(recognizer)
         
-        # Setup NLP engine
+        # Setup NLP engine with enhanced spaCy model
         nlp_config = {
             "nlp_engine_name": "spacy",
             "models": [{"lang_code": "en", "model_name": "en_core_web_lg"}],
@@ -98,19 +98,23 @@ class PIIAnalyzerEngine(BaseAnonymizerEngine):
         for recognizer in german_recognizers.get_recognizers():
             registry.add_recognizer(recognizer)
         
-        # Add some English recognizers that work for German too
+        # Add English recognizers that work for German too
         english_recognizers = RecognizerFactory.create_recognizers(Language.ENGLISH)
         for recognizer in english_recognizers.get_recognizers():
-            # Only add crypto and medical license recognizers
             if recognizer.supported_entities[0] in ["CRYPTO_WALLET", "MEDICAL_LICENSE"]:
                 registry.add_recognizer(recognizer)
         
-        # Setup NLP engine
+        # Setup NLP engine with enhanced spaCy model
         nlp_config = {
             "nlp_engine_name": "spacy", 
-            "models": [{"lang_code": "de", "model_name": "de_core_news_sm"}],
+            "models": [{"lang_code": "de", "model_name": "de_core_news_lg"}],
         }
         provider = NlpEngineProvider(nlp_configuration=nlp_config)
         nlp_engine = provider.create_engine()
         
-        return AnalyzerEngine(registry=registry, nlp_engine=nlp_engine)
+        # Configure analyzer with balanced threshold
+        return AnalyzerEngine(
+            registry=registry, 
+            nlp_engine=nlp_engine,
+            default_score_threshold=0.65  # Higher threshold to reduce false positives
+        )
