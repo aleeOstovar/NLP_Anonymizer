@@ -1,7 +1,3 @@
-# =============================================================================
-# recognizers/factory.py - Recognizer factory
-# =============================================================================
-
 from typing import Dict, List
 from core.types import Language
 from core.base import BaseRecognizer

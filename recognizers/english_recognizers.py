@@ -1,8 +1,3 @@
-
-# =============================================================================
-# recognizers/english_recognizers.py - English PII pattern recognizers
-# =============================================================================
-
 from typing import List
 from presidio_analyzer import PatternRecognizer, Pattern
 from core.base import BaseRecognizer

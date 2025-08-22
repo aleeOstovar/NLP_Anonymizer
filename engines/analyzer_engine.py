@@ -116,5 +116,5 @@ class PIIAnalyzerEngine(BaseAnonymizerEngine):
         return AnalyzerEngine(
             registry=registry, 
             nlp_engine=nlp_engine,
-            default_score_threshold=0.65  # Higher threshold to reduce false positives
+            default_score_threshold=0.65  
         )

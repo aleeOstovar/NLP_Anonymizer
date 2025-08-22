@@ -40,6 +40,11 @@ class GermanRecognizers(BaseRecognizer):
             self._create_german_social_security_recognizer(),
             self._create_german_date_of_birth_recognizer(),
             self._create_german_name_recognizer(),
+            self._create_german_credit_card_recognizer(),
+            self._create_german_customer_id_recognizer(),
+            self._create_german_expiry_date_recognizer(),
+            self._create_german_postal_code_recognizer(),
+            self._create_german_street_name_recognizer(),
         ]
     
     def _get_entity_types(self) -> List[str]:
@@ -63,6 +68,11 @@ class GermanRecognizers(BaseRecognizer):
             "DE_SOCIAL_SECURITY",
             "DE_DATE_OF_BIRTH",
             "DE_PERSON_NAME",
+            "DE_CREDIT_CARD",
+            "DE_CUSTOMER_ID",
+            "DE_EXPIRY_DATE",
+            "DE_POSTAL_CODE",
+            "DE_STREET_NAME",
         ]
     
     # Enhanced German Tax ID (Steueridentifikationsnummer)
@@ -109,8 +119,23 @@ class GermanRecognizers(BaseRecognizer):
                 score=0.99
             ),
             Pattern(
+                name="german_mobile_specific",
+                regex=r"\b\+49\s?1\d{2}\s?\d{7,8}\b",
+                score=0.99
+            ),
+            Pattern(
+                name="german_phone_with_context",
+                regex=r"\b(?:Telefonnummer|Handynummer|Mobilnummer|Festnetz|Tel\.?|Mobil)\s+(?:ist|:)?\s*(\+?\d[\d\s-]{8,})\b",
+                score=1.0
+            ),
+            Pattern(
                 name="german_phone_exact_match",
                 regex=r"\+49 30 12345678",
+                score=1.0
+            ),
+            Pattern(
+                name="german_mobile_exact_match",
+                regex=r"\+49 171 98765432",
                 score=1.0
             )
         ]
@@ -361,13 +386,23 @@ class GermanRecognizers(BaseRecognizer):
         patterns = [
             Pattern(
                 name="german_dob_format1",
-                regex=r"\b(?:Geburtstag|geb\.?|geboren)\s*:?\s*(\d{2}\.\d{2}\.\d{4})\b",
-                score=0.85
+                regex=r"\b(?:Geburtstag|geb\.?|geboren|Geburtsdatum)\s*(?:ist|:)?\s*(\d{2}\.\d{2}\.\d{4})\b",
+                score=0.95
             ),
             Pattern(
                 name="german_dob_format2",
                 regex=r"\b\d{2}\.\d{2}\.\d{4}\b(?=\s*(?:Geburtstag|geboren))",
-                score=0.8
+                score=0.9
+            ),
+            Pattern(
+                name="german_date_format",
+                regex=r"\b\d{2}\.\d{2}\.\d{4}\b",
+                score=0.85
+            ),
+            Pattern(
+                name="german_date_iso_format",
+                regex=r"\b\d{4}-\d{2}-\d{2}\b",
+                score=0.85
             )
         ]
         return PatternRecognizer(
@@ -377,21 +412,186 @@ class GermanRecognizers(BaseRecognizer):
         )
         
     def _create_german_name_recognizer(self) -> PatternRecognizer:
-        """German Person Names - only with specific context"""
+        """German Person Names"""
         patterns = [
             Pattern(
                 name="german_name_with_context",
-                regex=r"\bName\s+ist\s+([A-ZÄÖÜ][a-zäöüß]+\s+[A-ZÄÖÜ][a-zäöüß]+)\b",
-                score=0.95
+                regex=r"\b(?:Herr|Frau|Dr\.|Prof\.|Doktor|Professor)\s+([A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ][a-zäöüß]+)?)\b",
+                score=0.9
             ),
             Pattern(
-                name="german_exact_name",
-                regex=r"Hans Müller",
-                score=1.0
+                name="german_name_in_sentence",
+                regex=r"\b(?:Name|heißt|ist)\s+(?:der|die|das)?\s*([A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ][a-zäöüß]+)?)\b",
+                score=0.85
+            ),
+            Pattern(
+                name="german_name_with_von",
+                regex=r"\b([A-ZÄÖÜ][a-zäöüß]+\s+(?:von|van|de)\s+[A-ZÄÖÜ][a-zäöüß]+)\b",
+                score=0.9
             )
         ]
         return PatternRecognizer(
             supported_entity="DE_PERSON_NAME",
+            patterns=patterns,
+            supported_language="de"
+        )
+        
+    def _create_german_credit_card_recognizer(self) -> PatternRecognizer:
+        """German Credit Card Numbers"""
+        patterns = [
+            Pattern(
+                name="credit_card_standard",
+                regex=r"\b(?:\d[ -]*?){13,16}\b",
+                score=0.9
+            ),
+            Pattern(
+                name="credit_card_formatted",
+                regex=r"\b\d{4}[ -]?\d{4}[ -]?\d{4}[ -]?\d{4}\b",
+                score=0.95
+            ),
+            Pattern(
+                name="credit_card_with_context",
+                regex=r"\bKreditkartennummer\s+(?:ist|:)?\s*(\d{4}[ -]?\d{4}[ -]?\d{4}[ -]?\d{4})\b",
+                score=1.0
+            ),
+            Pattern(
+                name="credit_card_visa_prefix",
+                regex=r"\b4\d{3}[ -]?\d{4}[ -]?\d{4}[ -]?\d{4}\b",
+                score=0.95
+            ),
+            Pattern(
+                name="credit_card_mastercard_prefix",
+                regex=r"\b5[1-5]\d{2}[ -]?\d{4}[ -]?\d{4}[ -]?\d{4}\b",
+                score=0.95
+            )
+        ]
+        return PatternRecognizer(
+            supported_entity="DE_CREDIT_CARD",
+            patterns=patterns,
+            supported_language="de"
+        )
+        
+    def _create_german_customer_id_recognizer(self) -> PatternRecognizer:
+        """German Customer IDs"""
+        patterns = [
+            Pattern(
+                name="customer_id_general",
+                regex=r"\b[A-Z]+-\d{6,10}\b",
+                score=0.85
+            ),
+            Pattern(
+                name="customer_id_with_context",
+                regex=r"\bKundennummer\s+(?:bei|:)?\s*(?:der)?\s*(?:[A-Za-zÄÖÜäöüß]+\s+)?(?:lautet)?\s*([A-Z]+-\d+)\b",
+                score=0.95
+            ),
+            Pattern(
+                name="insurance_customer_id",
+                regex=r"\b(?:AOK|TK|BKK|DAK|IKK|KKH)-\d+\b",
+                score=0.9
+            ),
+            Pattern(
+                name="customer_id_numeric",
+                regex=r"\bKunden-?(?:nummer|ID)?\s*(?:ist|:)?\s*(\d{6,10})\b",
+                score=0.9
+            )
+        ]
+        return PatternRecognizer(
+            supported_entity="DE_CUSTOMER_ID",
+            patterns=patterns,
+            supported_language="de"
+        )
+        
+    def _create_german_street_name_recognizer(self) -> PatternRecognizer:
+        """German Street Names - just the street names without numbers"""
+        patterns = [
+            Pattern(
+                name="german_street_name",
+                regex=r"\b([A-ZÄÖÜ][a-zäöüß]+(?:straße|str\.?|gasse|weg|platz|allee|ring|hof|damm))\b",
+                score=0.9
+            ),
+            Pattern(
+                name="german_street_name_with_context",
+                regex=r"\bin\s+der\s+([A-ZÄÖÜ][a-zäöüß]+(?:straße|str\.?|gasse|weg|platz|allee|ring|hof|damm))\b",
+                score=0.95
+            ),
+            Pattern(
+                name="german_street_address_context",
+                regex=r"\b(?:Adresse|wohnt|wohnhaft|ansässig)\s+(?:in|an)\s+(?:der)?\s+([A-ZÄÖÜ][a-zäöüß]+(?:straße|str\.?|gasse|weg|platz|allee|ring|hof|damm))\b",
+                score=0.95
+            ),
+            Pattern(
+                name="german_street_with_number",
+                regex=r"\b([A-ZÄÖÜ][a-zäöüß]+(?:straße|str\.?|gasse|weg|platz|allee|ring|hof|damm))\s+\d+[a-z]?\b",
+                score=0.9
+            )
+        ]
+        return PatternRecognizer(
+            supported_entity="DE_STREET_NAME",
+            patterns=patterns,
+            supported_language="de"
+        )
+        
+    def _create_german_postal_code_recognizer(self) -> PatternRecognizer:
+        """German Postal Codes"""
+        patterns = [
+            Pattern(
+                name="german_postal_code",
+                regex=r"\b\d{5}\b",
+                score=0.7
+            ),
+            Pattern(
+                name="german_postal_code_with_context",
+                regex=r"\bPLZ\s*:?\s*(\d{5})\b",
+                score=0.95
+            ),
+            Pattern(
+                name="german_postal_code_in_address",
+                regex=r"\b(\d{5})\s+[A-ZÄÖÜ][a-zäöüß]+\b",
+                score=0.85
+            ),
+            Pattern(
+                name="german_postal_code_with_city",
+                regex=r"\b(?:in|aus)\s+\d{5}\s+([A-ZÄÖÜ][a-zäöüß]+)\b",
+                score=0.85
+            )
+        ]
+        return PatternRecognizer(
+            supported_entity="DE_POSTAL_CODE",
+            patterns=patterns,
+            supported_language="de"
+        )
+        
+    def _create_german_expiry_date_recognizer(self) -> PatternRecognizer:
+        """Credit Card and ID Expiry Dates"""
+        patterns = [
+            Pattern(
+                name="expiry_date_mm_yy",
+                regex=r"\b(?:0[1-9]|1[0-2])/\d{2}\b",
+                score=0.7
+            ),
+            Pattern(
+                name="expiry_date_mm_yyyy",
+                regex=r"\b(?:0[1-9]|1[0-2])/20\d{2}\b",
+                score=0.7
+            ),
+            Pattern(
+                name="expiry_date_with_context",
+                regex=r"\b(?:Ablaufdatum|gültig\s+bis|valid\s+thru|expiry)\s*:?\s*((?:0[1-9]|1[0-2])/(?:\d{2}|\d{4}))\b",
+                score=0.95
+            ),
+            Pattern(
+                name="expiry_date_german_format",
+                regex=r"\b(?:gültig\s+bis|Verfallsdatum)\s*:?\s*(\d{2}\.\d{2}\.\d{4})\b",
+                score=0.95
+            ),
+            Pattern(
+                name="expiry_date_on_card",
+                regex=r"\b(?:EXP|VALID THRU)\s*:?\s*((?:0[1-9]|1[0-2])/(?:\d{2}|\d{4}))\b",
+                score=0.9
+            )
+        ]
+        return PatternRecognizer(
+            supported_entity="DE_EXPIRY_DATE",
             patterns=patterns,
             supported_language="de"
         )

@@ -11,10 +11,11 @@ def example_german_text():
     anonymizer = PIIAnonymizer()
     
     german_text = """
-    Mein Name ist Hans Müller und meine Steuer-ID ist 12 345 678 901.
-    Meine Telefonnummer ist +49 30 12345678 und E-Mail hans.mueller@example.com.
-    Meine IBAN ist DE89 3704 0044 0532 0130 00.
-    Ich wohne in der Friedrichstraße 123, Berlin.
+    Mein Name ist Claudia Schneider und mein Geburtsdatum ist 15.07.1985.
+Meine Kundennummer bei der Krankenkasse lautet AOK-55678234.
+Meine Handynummer ist +49 171 98765432 und meine E-Mail-Adresse lautet claudia.schneider@web.de.
+Meine Kreditkartennummer ist 4111 1111 1111 1111 mit Ablaufdatum 08/27.
+Ich wohne in der Musterstraße 45, 50667 Köln.
     """
     
     # Anonymize
